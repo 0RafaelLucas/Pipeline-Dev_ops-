@@ -1,0 +1,71 @@
+
+name: Pipeline CI/CD
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+
+jobs:
+
+  validar:
+    name: 1 - Validar a página
+    runs-on: ubuntu-latest       
+    steps:
+      - name: Baixar o código     
+        uses: actions/checkout@v4
+
+      - name: Validar index.html  
+        run: bash scripts/validar.sh index.html
+
+      - name: Resumo da execução 
+        run: |
+          echo "### Pipeline executada" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch: \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Evento: \`${{ github.event_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+ 
+  publicar:
+    name: 2 - Publicar no GitHub Pages
+    needs: validar            
+
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Separar os arquivos do site
+        run: |
+          mkdir _site
+          cp index.html _site/
+
+      - name: Configurar o Pages
+        uses: actions/configure-pages@v5
+
+      - name: Enviar o site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4
