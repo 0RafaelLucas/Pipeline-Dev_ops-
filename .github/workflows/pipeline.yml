@@ -1,12 +1,6 @@
 # ESTEIRA DE SEGURANÇA (SAST -> DAST -> Deploy)
-# Esta esteira não conhece o conteúdo da página: ela analisa tudo o que estiver
-# dentro da pasta "pagina/" (HTML, CSS, JavaScript). A página pode mudar à vontade.
 name: Pipeline de Segurança
 
-# QUANDO a esteira roda:
-# - sempre que alguém envia código (push) para essas branches
-# - sempre que alguém abre um Pull Request para main ou develop
-# - manualmente, pelo botão "Run workflow"
 on:
   push:
     branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
@@ -25,27 +19,23 @@ concurrency:
 # ORDEM: SAST -> DAST -> Deploy. Se um job falhar, os seguintes não rodam.
 jobs:
 
-  # JOB 1: SAST (análise estática)
-  # Lê o código-fonte SEM executar a página, procurando padrões inseguros.
-  # Validação: o job falha se o Semgrep achar algo de severidade ERROR.
+  # JOB 1: SAST 
   sast:
     name: 1 - SAST (Semgrep)
-    runs-on: ubuntu-latest        # computador virtual do GitHub que executa os passos
+    runs-on: ubuntu-latest        
     container:
-      image: semgrep/semgrep      # imagem oficial do Semgrep
+      image: semgrep/semgrep      
     steps:
-      - name: Baixar o código     # traz os arquivos do repositório para o computador virtual
+      - name: Baixar o código     
         uses: actions/checkout@v4
 
       - name: Análise estática com Semgrep
         run: semgrep scan --config p/default --config .semgrep/regras.yml --severity ERROR --error pagina
 
-  # JOB 2: DAST (análise dinâmica)
-  # Coloca a página para rodar e a ataca "por fora", como um invasor faria.
-  # Validações: (1) a página precisa responder; (2) o ZAP não pode achar alerta de risco ALTO.
+  # JOB 2: DAST
   dast:
     name: 2 - DAST (OWASP ZAP)
-    needs: sast                   # só começa depois que o SAST terminar com sucesso
+    needs: sast
     runs-on: ubuntu-latest
     steps:
       - name: Baixar o código
@@ -72,7 +62,6 @@ jobs:
           path: zap-out/
 
   # JOB 3: Deploy (coloca a página no ar)
-  # Só roda se o SAST e o DAST passaram, e só na branch main.
   publicar:
     name: 3 - Deploy no GitHub Pages
     needs: dast
