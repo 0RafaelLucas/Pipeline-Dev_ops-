@@ -1,0 +1,21 @@
+# Regras próprias do SAST. Rodam junto com as regras padrão do Semgrep.
+rules:
+  - id: uso-de-eval
+    languages: [generic]
+    severity: ERROR
+    message: Uso de eval() detectado. Isso permite executar código arbitrário.
+    pattern-regex: \beval\s*\(
+    paths:
+      include:
+        - "*.html"
+        - "*.js"
+
+  - id: senha-fixa-no-codigo
+    languages: [generic]
+    severity: ERROR
+    message: Possível senha escrita direto no código.
+    pattern-regex: "(?i)(password|senha)\\s*=\\s*[\"'][^\"']+[\"']"
+    paths:
+      include:
+        - "*.html"
+        - "*.js"
