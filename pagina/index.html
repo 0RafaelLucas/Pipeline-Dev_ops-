@@ -1,23 +1,105 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Página da atividade</title>
-  <style>
-    body {
-      margin: 0; min-height: 100vh;
-      display: flex; flex-direction: column; justify-content: center;
-      padding: 0 max(1.5rem, 8vw);
-      background: #0f1419; color: #e8ecf1;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.7;
-    }
-    h1 { margin: 0 0 1rem; font-size: clamp(2rem, 6vw, 3.5rem); font-weight: 600; }
-    p { margin: 0; max-width: 40rem; font-size: 1.25rem; color: #aab4c0; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FGC Arena</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/script.js" defer></script>
 </head>
 <body>
-  <h1>Página da atividade</h1>
-  <p>Segunda versão da pagina com alteração no texto que vc está lendo</p>
+    <header id="header" class="hidden">
+        <div class="logo">FGC <span>ARENA</span></div>
+        <nav>
+            <button onclick="logout()">Sair</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="loginScreen" class="login-container">
+            <div class="login-box">
+                <h1>FGC <span>ARENA</span></h1>
+                <p>Central da Fighting Game Community</p>
+                <form id="loginForm">
+                    <label>Nome da conta</label>
+                    <input type="text" id="username" placeholder="Digite seu usuário" required>
+                    <label>Senha</label>
+                    <input type="password" id="password" placeholder="Digite sua senha" required>
+                    <button type="submit">Entrar</button>
+                </form>
+                <p id="loginMessage"></p>
+            </div>
+        </section>
+
+        <section id="dashboard" class="hidden">
+            <div class="welcome">
+                <h1 id="welcomeTitle"></h1>
+                <p id="welcomeSubtitle"></p>
+            </div>
+
+            <div id="organizerPanel" class="hidden">
+                <section class="stats">
+                    <div class="card">
+                        <h3>Torneios</h3>
+                        <strong id="totalTournaments">0</strong>
+                    </div>
+                    <div class="card">
+                        <h3>Jogadores</h3>
+                        <strong id="totalPlayers">0</strong>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <h2>Criar torneio</h2>
+                    <form id="tournamentForm">
+                        <label>Nome do torneio</label>
+                        <input type="text" id="tournamentName" required>
+                        <label for="tournamentGame">Jogo</label>
+                        <select id="tournamentGame" name="game" required>
+                            <option value="Street Fighter 6" selected>Street Fighter 6</option>
+                            <option value="Tekken 8">Tekken 8</option>
+                            <option value="Mortal Kombat 1">Mortal Kombat 1</option>
+                            <option value="Guilty Gear Strive">Guilty Gear Strive</option>
+                        </select>
+                        <label>Quantidade máxima de jogadores</label>
+                        <input type="number" id="maxPlayers" min="2" max="32" value="8" required>
+                        <label for="tournamentFormat">Formato da grade</label>
+                        <select id="tournamentFormat" name="format" required>
+                            <option value="single" selected>Single Elimination</option>
+                            <option value="double">Double Elimination</option>
+                        </select>
+                        <button type="submit">Criar torneio</button>
+                    </form>
+                </section>
+
+                <section class="panel">
+                    <h2>Gerenciar torneios</h2>
+                    <div id="organizerTournaments"></div>
+                </section>
+            </div>
+
+            <div id="playerPanel" class="hidden">
+                <section class="panel">
+                    <h2>Torneios disponíveis</h2>
+                    <div id="availableTournaments"></div>
+                </section>
+                <section class="panel">
+                    <h2>Meus torneios</h2>
+                    <div id="myTournaments"></div>
+                </section>
+            </div>
+
+            <section id="bracketPanel" class="panel hidden">
+                <div class="bracket-header">
+                    <div>
+                        <h2 id="bracketTitle"></h2>
+                        <p id="bracketDescription"></p>
+                    </div>
+                    <button onclick="closeBracket()">Voltar</button>
+                </div>
+                <div id="bracketContent"></div>
+            </section>
+        </section>
+    </main>
 </body>
 </html>
