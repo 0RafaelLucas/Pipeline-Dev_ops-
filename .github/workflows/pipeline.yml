@@ -1,0 +1,101 @@
+# ESTEIRA DE SEGURANÇA (SAST -> DAST -> Deploy)
+# Esta esteira não conhece o conteúdo da página: ela analisa tudo o que estiver
+# dentro da pasta "pagina/" (HTML, CSS, JavaScript). A página pode mudar à vontade.
+name: Pipeline de Segurança
+
+# QUANDO a esteira roda:
+# - sempre que alguém envia código (push) para essas branches
+# - sempre que alguém abre um Pull Request para main ou develop
+# - manualmente, pelo botão "Run workflow"
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Se chegar um push novo na mesma branch, cancela a execução antiga
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+# ORDEM: SAST -> DAST -> Deploy. Se um job falhar, os seguintes não rodam.
+jobs:
+
+  # JOB 1: SAST (análise estática)
+  # Lê o código-fonte SEM executar a página, procurando padrões inseguros.
+  # Validação: o job falha se o Semgrep achar algo de severidade ERROR.
+  sast:
+    name: 1 - SAST (Semgrep)
+    runs-on: ubuntu-latest        # computador virtual do GitHub que executa os passos
+    container:
+      image: semgrep/semgrep      # imagem oficial do Semgrep
+    steps:
+      - name: Baixar o código     # traz os arquivos do repositório para o computador virtual
+        uses: actions/checkout@v4
+
+      - name: Análise estática com Semgrep
+        run: semgrep scan --config p/default --config .semgrep/regras.yml --severity ERROR --error pagina
+
+  # JOB 2: DAST (análise dinâmica)
+  # Coloca a página para rodar e a ataca "por fora", como um invasor faria.
+  # Validações: (1) a página precisa responder; (2) o ZAP não pode achar alerta de risco ALTO.
+  dast:
+    name: 2 - DAST (OWASP ZAP)
+    needs: sast                   # só começa depois que o SAST terminar com sucesso
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Subir a página e escanear com o ZAP
+        run: |
+          mkdir zap-out
+          chmod a+rwx zap-out
+          python3 -m http.server 8000 --directory pagina > /dev/null 2>&1 &
+          sleep 3
+          curl --fail --silent --output /dev/null http://localhost:8000/
+          echo "OK: a página respondeu com sucesso"
+          docker run --rm --network host -v "$(pwd)/zap-out:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://localhost:8000 -r relatorio-zap.html -J relatorio-zap.json -I -m 1
+
+      - name: Verificar o resultado do ZAP
+        run: python3 scripts/verificar_zap.py zap-out/relatorio-zap.json
+
+      - name: Guardar o relatório do ZAP
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-zap
+          path: zap-out/
+
+  # JOB 3: Deploy (coloca a página no ar)
+  # Só roda se o SAST e o DAST passaram, e só na branch main.
+  publicar:
+    name: 3 - Deploy no GitHub Pages
+    needs: dast
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Configurar o Pages
+        uses: actions/configure-pages@v5
+
+      - name: Enviar a pasta da página
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pagina
+
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4
