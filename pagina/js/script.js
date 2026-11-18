@@ -9,9 +9,7 @@ const accounts = [
     { username: "Jessica", password: "0987", role: "player" },
     { username: "João", password: "zon3r", role: "player" }
 ];
-function  processPlayerdata(playerData){
-    return eval(playerData);
-}
+
 let currentUser = null;
 let tournaments = JSON.parse(localStorage.getItem("tournaments")) || [];
 let activeTournamentId = null;
