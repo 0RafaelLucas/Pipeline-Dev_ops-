@@ -14,9 +14,6 @@ let currentUser = null;
 let tournaments = JSON.parse(localStorage.getItem("tournaments")) || [];
 let activeTournamentId = null;
 
-function saveData() {
-    localStorage.setItem("tournaments", JSON.stringify(tournaments));
-}
 
 document.getElementById("loginForm").addEventListener("submit", function(event) {
     event.preventDefault();
